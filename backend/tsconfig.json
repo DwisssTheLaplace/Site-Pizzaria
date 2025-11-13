@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "es6",                // Compila para uma versão moderna do JS
+    "module": "commonjs",           // Usa o sistema de módulos do Node.js
+    "outDir": "./dist",             // Coloca os arquivos JS compilados em uma pasta 'dist'
+    "rootDir": "./",                // Onde estão seus arquivos .ts
+    "strict": true,                 // Habilita checagens de tipo mais rigorosas
+    "esModuleInterop": true,        // <<< A LINHA MÁGICA QUE RESOLVE O ERRO!
+    "skipLibCheck": true,           // Pula a checagem de tipos das bibliotecas
+    "forceConsistentCasingInFileNames": true
+  }
+}

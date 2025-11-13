@@ -1,0 +1,81 @@
+.card {
+    justify-content: center;
+    width: 350px;
+    height: 500px;
+    color: #202020;
+    text-align: center;
+    background-color: rgb(247, 249, 252);
+    box-shadow: rgba(17, 17, 26, 0.1) 0px 1px 0px, rgba(17, 17, 26, 0.1) 0px 8px 24px, rgba(17, 17, 26, 0.1) 0px 16px 48px;
+    border: 1px;
+    border-radius: 10px;
+}
+
+.card>h1 {
+    font-size: 25px;
+    padding-top: 10px;
+}
+
+.card>p {
+    font-size: 18px;
+    padding: 10px 20px;
+}
+
+.botqntd {
+    background-color: #474040;
+    display: table-column;
+    font-size: 17px;
+    padding: 10px 20px;
+    margin-top: 15px;
+    border: none;
+}
+
+.botqntd1 {
+    background-color: rgb(187, 6, 6);
+    display: table-column;
+    font-size: 17px;
+    padding: 10px 20px;
+    margin-top: 15px;
+    border: none;
+}
+
+.botqntd2 {
+    background-color: rgba(93, 155, 0, 0.911);
+    display: table-column;
+    font-size: 17px;
+    padding: 10px 20px;
+    margin-top: 15px;
+    border: none;
+}
+
+.botqntd1:hover {
+    background-color: rgb(255, 0, 0);
+    cursor: pointer;
+    transition: 0.5s background;
+}
+
+.botqntd2:hover {
+    background-color: rgba(0, 128, 0, 0.911);
+    cursor: pointer;
+    transition: 0.5s background;
+}
+
+.add {
+    background-color: #b9acac;
+    display: table-column;
+    font-size: 17px;
+    padding: 10px 25px;
+    margin-top: 15px;
+    border-color: #000000;
+}
+
+.add:hover {
+    background-color: #7c7777;
+    cursor: pointer;
+    transition: 0.5s background;
+}
+
+.card>img {
+    width: 100%;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
