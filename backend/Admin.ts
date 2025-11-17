@@ -11,8 +11,9 @@ const dbConfig = {
 const pool = new Pool(dbConfig);
 
 export async function prepararAmbiente() {
+    let client;
     try {
-        const client = await pool.connect();
+        client = await pool.connect();
         const createTableQuery = `
             CREATE TABLE IF NOT EXISTS usuarios (
             id SERIAL PRIMARY KEY,
@@ -23,10 +24,27 @@ export async function prepararAmbiente() {
             ); `
         await client.query(createTableQuery);
         console.log('Tabela "usuarios" está pronta.'); // remover para adicionar no site ao inves daq
-        client.release();
+
+        const createCardapioTableQuery = `
+            CREATE TABLE IF NOT EXISTS cardapio_itens (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(100) NOT NULL,
+                descricao TEXT,
+                preco DECIMAL(10, 2) NOT NULL,
+                imagem_url VARCHAR(255) NOT NULL
+            );
+        `;
+        await client.query(createCardapioTableQuery);
+        console.log('Tabela "cardapio_itens" está pronta.');
+
     } catch (err) {
         console.error('Erro ao preparar o ambiente:', err); // remover para adicionar no site ao inves daq
-}}
+    } finally {
+        if (client) {
+            client.release();
+        }
+    }
+}
 
 export async function inserirCadastro(nome: string, email: string, senha: string, cargo: string) {
     try {
@@ -70,3 +88,41 @@ export async function login(email: string, senha: string): Promise<any> {
 
 }
 
+export async function inserirItemCardapio(nome: string, descricao: string, preco: number, imagem_url: string) {
+    let client;
+    try {
+        client = await pool.connect();
+        const insertQuery = `
+            INSERT INTO cardapio_itens (nome, descricao, preco, imagem_url)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id; 
+        `;
+        const res = await client.query(insertQuery, [nome, descricao, preco, imagem_url]);
+        console.log('Item do cardápio inserido com ID:', res.rows[0].id);
+        return res.rows[0].id;
+    } catch (err) {
+        console.error('Erro ao inserir item do cardápio:', err);
+        throw err;
+    } finally {
+        if (client) {
+            client.release();
+        }
+    }
+}
+
+export async function buscarItensCardapio() {
+    let client;
+    try {
+        client = await pool.connect();
+        const selectQuery = `SELECT * FROM cardapio_itens;`;
+        const res = await client.query(selectQuery);
+        return res.rows;
+    } catch (err) {
+        console.error('Erro ao buscar itens do cardápio:', err);
+        throw err;
+    } finally {
+        if (client) {
+            client.release();
+        }
+    }
+}

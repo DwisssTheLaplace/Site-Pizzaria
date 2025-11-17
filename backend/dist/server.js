@@ -16,11 +16,24 @@ const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const Admin_1 = require("./Admin");
+const multer_1 = __importDefault(require("multer"));
+const path_1 = __importDefault(require("path"));
 const app = (0, express_1.default)();
 const PORT = 3000; // porta
 const JWT_Senha = '2,x$0jJ]Ot]r!:#{@lCh#?FOMFF]PhQ2kfnD5!ZA_pASaPe>[';
+app.use('/uploads', express_1.default.static('uploads'));
 app.use((0, cors_1.default)());
 app.use(express_1.default.json()); //middleware -> entender json das requisições
+// Configuração do multer para upload de arquivos
+const storage = multer_1.default.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/'); // pasta onde os arquivos serão salvos
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.fieldname + '-' + Date.now() + path_1.default.extname(file.originalname));
+    }
+});
+const upload = (0, multer_1.default)({ storage: storage });
 app.post('/cadastrar', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { nome, email, senha, cargo } = req.body;
     if (!nome || !email || !senha || !cargo) {
@@ -75,6 +88,32 @@ app.get('/user-perfil', verificarTotem, (req, res) => {
         cargo: req.user.cargo
     });
 });
+app.post('/cardapio/item', upload.single('imagem'), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { nome, descricao, preco } = req.body;
+        const imagem = req.file;
+        if (!nome || !descricao || !preco || !imagem) {
+            return res.status(400).json({ error: 'Nome, preço e imagem são obrigatórios.' });
+        }
+        const imagemUrl = `http://localhost:${PORT}/${imagem.path}`;
+        yield (0, Admin_1.inserirItemCardapio)(nome, descricao, preco, imagemUrl);
+        res.status(201).json({ message: 'Item cadastrado com sucesso!' });
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao cadastrar o item. Tente novamente.' });
+    }
+}));
+app.get('/cardapio', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const itens = yield (0, Admin_1.buscarItensCardapio)();
+        res.status(200).json(itens);
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar os itens do cardápio. Tente novamente.' });
+    }
+}));
 app.listen(PORT, () => __awaiter(void 0, void 0, void 0, function* () {
     yield (0, Admin_1.prepararAmbiente)();
     console.log(`Servidor rodando na porta ${PORT}`);

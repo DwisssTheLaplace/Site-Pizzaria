@@ -12,6 +12,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.prepararAmbiente = prepararAmbiente;
 exports.inserirCadastro = inserirCadastro;
 exports.login = login;
+exports.inserirItemCardapio = inserirItemCardapio;
+exports.buscarItensCardapio = buscarItensCardapio;
 const { Pool } = require('pg');
 const dbConfig = {
     user: 'aluno',
@@ -23,8 +25,9 @@ const dbConfig = {
 const pool = new Pool(dbConfig);
 function prepararAmbiente() {
     return __awaiter(this, void 0, void 0, function* () {
+        let client;
         try {
-            const client = yield pool.connect();
+            client = yield pool.connect();
             const createTableQuery = `
             CREATE TABLE IF NOT EXISTS usuarios (
             id SERIAL PRIMARY KEY,
@@ -35,10 +38,25 @@ function prepararAmbiente() {
             ); `;
             yield client.query(createTableQuery);
             console.log('Tabela "usuarios" está pronta.'); // remover para adicionar no site ao inves daq
-            client.release();
+            const createCardapioTableQuery = `
+            CREATE TABLE IF NOT EXISTS cardapio_itens (
+                id SERIAL PRIMARY KEY,
+                nome VARCHAR(100) NOT NULL,
+                descricao TEXT,
+                preco DECIMAL(10, 2) NOT NULL,
+                imagem_url VARCHAR(255) NOT NULL
+            );
+        `;
+            yield client.query(createCardapioTableQuery);
+            console.log('Tabela "cardapio_itens" está pronta.');
         }
         catch (err) {
             console.error('Erro ao preparar o ambiente:', err); // remover para adicionar no site ao inves daq
+        }
+        finally {
+            if (client) {
+                client.release();
+            }
         }
     });
 }
@@ -79,6 +97,51 @@ function login(email, senha) {
         }
         catch (err) {
             console.error('Erro durante o login:', err);
+            throw err;
+        }
+        finally {
+            if (client) {
+                client.release();
+            }
+        }
+    });
+}
+function inserirItemCardapio(nome, descricao, preco, imagem_url) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let client;
+        try {
+            client = yield pool.connect();
+            const insertQuery = `
+            INSERT INTO cardapio_itens (nome, descricao, preco, imagem_url)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id; 
+        `;
+            const res = yield client.query(insertQuery, [nome, descricao, preco, imagem_url]);
+            console.log('Item do cardápio inserido com ID:', res.rows[0].id);
+            return res.rows[0].id;
+        }
+        catch (err) {
+            console.error('Erro ao inserir item do cardápio:', err);
+            throw err;
+        }
+        finally {
+            if (client) {
+                client.release();
+            }
+        }
+    });
+}
+function buscarItensCardapio() {
+    return __awaiter(this, void 0, void 0, function* () {
+        let client;
+        try {
+            client = yield pool.connect();
+            const selectQuery = `SELECT * FROM cardapio_itens;`;
+            const res = yield client.query(selectQuery);
+            return res.rows;
+        }
+        catch (err) {
+            console.error('Erro ao buscar itens do cardápio:', err);
             throw err;
         }
         finally {
