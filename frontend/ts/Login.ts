@@ -31,13 +31,13 @@ registroButton.addEventListener('click', async (event) => {
             setTimeout(() => {
                 switch (result.cargo) {
                     case 'cliente':
-                        window.location.href = 'menuCliente.html';
+                        window.location.href = './cliente/menuCliente.html';
                         break;
                     case 'funcionario':
-                        window.location.href = 'menuFuncionario.html';
+                        window.location.href = './funcionario/menuFuncionario.html';
                         break;
                     case 'gerente':
-                        window.location.href = 'menuGerente.html';
+                        window.location.href = './gerente/menuGerente.html';
                         break;
                     default:
                         console.error('Cargo do usuário não reconhecido:', result.cargo);

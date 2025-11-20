@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Carrinho de Compras</title>
+    <link rel="stylesheet" href="../styles/stylesheet.css">
+    <link rel="stylesheet" href="../styles/card.css">
+</head>
+<body>
+    <div class="header">
+        🍕 PIZZARIA TYPE & DOUGH 🍕
+        <div class="alinhamento esquerdo">
+            <a href="index.html"> HOME </a>
+        </div>
+    </div>
+    <br><br>
+    <div class="caixa" id="carrinho-container">
+        <h1>Seu Carrinho</h1>
+        <div id="itens-carrinho">
+            
+        </div>
+        <hr>
+        <h2 id="valor-total">Total: R$ 0,00</h2>
+
+        <div id="form-pagamento">
+            <h3>Finalizar Pedido</h3>
+            <form id="checkout-form">
+                <label for="metodo-pagamento">Forma de Pagamento:</label><br>
+                <select id="metodo-pagamento" required>
+                    <option value="cartao_credito">Cartão de Crédito</option>
+                    <option value="cartao_debito">Cartão de Débito</option>
+                    <option value="dinheiro">Dinheiro</option>
+                </select>
+                <br><br>
+                <div id="campo-troco" style="display: none;">
+                    <label for="troco">Precisa de troco para quanto?</label><br>
+                    <input type="number" id="troco" placeholder="50.00">
+                    <br><br>
+                </div>
+                <button type="submit" class="Enviar">Finalizar Pedido</button>
+            </form>
+        </div>
+        <p id="mensagem-pedido"></p>
+    </div>
+    <script src="../../dist/cliente/carrinho.js"></script>
+</body>
+</html>

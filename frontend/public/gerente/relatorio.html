@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório de Vendas</title>
+    <link rel="stylesheet" href="../styles/stylesheet.css">
+    <style>
+        .relatorio-item {
+            font-size: 20px;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f2f2f2;
+            border-left: 5px solid red;
+        }
+        .relatorio-item span {
+            font-size: 24px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">🍕 RELATÓRIO DE VENDAS 🍕</div>
+    <br><br>
+    <div class="caixa">
+        <h1>Desempenho de Vendas</h1>
+        <hr><br>
+        <div id="relatorio-container">
+            <p>Carregando dados...</p>
+        </div>
+        <br>
+        <a href="./menuGerente.html"><button class="Enviar" style="background-color: #555;">Voltar ao Menu</button></a>
+    </div>
+    <script src="../../dist/gerente/relatorio.js"></script>
+</body>
+</html>

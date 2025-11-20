@@ -8,7 +8,7 @@ interface CardapioItem {
     imagem_url: string;
 }
 
-async function carregarCardapio() {
+async function carregarCardapio() { // (2) importante 
 
     if (!menuContainer) {
         console.error('Erro crítico: O contêiner do menu com id "menu-container" não foi encontrado no HTML.');
@@ -64,7 +64,7 @@ if (menuContainer) {
         const cardElement = target.closest('.card');
 
         if (!cardElement) {
-            return; // Sai da função se o clique não for dentro de um card
+            return;
         }
 
         const quantidadeView = cardElement.querySelector('.botqntd') as HTMLButtonElement;
@@ -121,7 +121,7 @@ if (menuContainer) {
 };
 
 
-function adicionarAoCarrinho(item: { id: number; nome: string; preco: number; quantidade: number; }) {
+function adicionarAoCarrinho(item: { id: number; nome: string; preco: number; quantidade: number; }) { // storage
     const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
     const itemExistente = carrinho.find((i: any) => i.id === item.id);
 

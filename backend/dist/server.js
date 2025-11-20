@@ -15,63 +15,30 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const Admin_1 = require("./Admin");
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
+const database_1 = require("./config/database");
+const usuario_1 = require("./services/usuario");
+const cardapio_1 = require("./services/cardapio");
+const pedido_1 = require("./services/pedido");
+const relatorio_1 = require("./services/relatorio");
+// Configuração inicial do servidor
 const app = (0, express_1.default)();
-const PORT = 3000; // porta
+const PORT = 3000;
 const JWT_Senha = '2,x$0jJ]Ot]r!:#{@lCh#?FOMFF]PhQ2kfnD5!ZA_pASaPe>[';
-app.use('/uploads', express_1.default.static('uploads'));
+//  Middlewares
 app.use((0, cors_1.default)());
-app.use(express_1.default.json()); //middleware -> entender json das requisições
-// Configuração do multer para upload de arquivos
+app.use(express_1.default.json());
+app.use('/uploads', express_1.default.static('uploads'));
+// Configuração do Multer (upload das imagens para o cardápio)
 const storage = multer_1.default.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // pasta onde os arquivos serão salvos
-    },
+    destination: (req, file, cb) => cb(null, 'uploads/'),
     filename: (req, file, cb) => {
         cb(null, file.fieldname + '-' + Date.now() + path_1.default.extname(file.originalname));
     }
 });
 const upload = (0, multer_1.default)({ storage: storage });
-app.post('/cadastrar', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { nome, email, senha, cargo } = req.body;
-    if (!nome || !email || !senha || !cargo) {
-        return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
-    }
-    try {
-        yield (0, Admin_1.inserirCadastro)(nome, email, senha, cargo);
-        res.status(201).json({ message: 'Cadastro realizado com sucesso.' });
-    }
-    catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Erro ao realizar o cadastro. Tente novamente' });
-    }
-}));
-app.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, senha } = req.body;
-    if (!email || !senha) {
-        return res.status(400).json({ error: 'Email e senha são obrigatórios.' });
-    }
-    try {
-        const usuario = yield (0, Admin_1.login)(email, senha);
-        if (usuario) {
-            const token = jsonwebtoken_1.default.sign({ id: usuario.id, nome: usuario.nome, cargo: usuario.cargo }, JWT_Senha, { expiresIn: '56h' });
-            res.status(200).json({
-                message: 'Login realizado com sucesso.',
-                token: token,
-                cargo: usuario.cargo
-            });
-        }
-        else {
-            res.status(401).json({ error: 'Email ou senha inválidos.' });
-        }
-    }
-    catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Erro ao realizar o login. Tente novamente.' });
-    }
-}));
+// Middlewares de autentificação e autorização
 function verificarTotem(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // formato "bearer TOKEN"
@@ -98,6 +65,47 @@ function verificarCargo(cargosPermitidos) {
         }
     };
 }
+// Rotas (endpoints da API): 
+const cargosOperacionais = ['funcionario', 'gerente'];
+// Rotas públicas e de usuários
+app.post('/cadastrar', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { nome, email, senha, cargo } = req.body;
+    if (!nome || !email || !senha || !cargo) {
+        return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
+    }
+    try {
+        yield (0, usuario_1.inserirCadastro)(nome, email, senha, cargo);
+        res.status(201).json({ message: 'Cadastro realizado com sucesso.' });
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao realizar o cadastro. Tente novamente' });
+    }
+}));
+app.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, senha } = req.body;
+    if (!email || !senha) {
+        return res.status(400).json({ error: 'Email e senha são obrigatórios.' });
+    }
+    try {
+        const usuario = yield (0, usuario_1.login)(email, senha);
+        if (usuario) {
+            const token = jsonwebtoken_1.default.sign({ id: usuario.id, nome: usuario.nome, cargo: usuario.cargo }, JWT_Senha, { expiresIn: '56h' });
+            res.status(200).json({
+                message: 'Login realizado com sucesso.',
+                token: token,
+                cargo: usuario.cargo
+            });
+        }
+        else {
+            res.status(401).json({ error: 'Email ou senha inválidos.' });
+        }
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao realizar o login. Tente novamente.' });
+    }
+}));
 app.get('/user-perfil', verificarTotem, (req, res) => {
     res.json({
         message: `Bem-vindo ao seu perfil, ${req.user.nome}!`,
@@ -112,7 +120,7 @@ app.post('/cardapio/item', upload.single('imagem'), (req, res) => __awaiter(void
             return res.status(400).json({ error: 'Nome, preço e imagem são obrigatórios.' });
         }
         const imagemUrl = `http://localhost:${PORT}/${imagem.path}`;
-        yield (0, Admin_1.inserirItemCardapio)(nome, descricao, preco, imagemUrl);
+        yield (0, cardapio_1.inserirItemCardapio)(nome, descricao, preco, imagemUrl);
         res.status(201).json({ message: 'Item cadastrado com sucesso!' });
     }
     catch (error) {
@@ -120,72 +128,14 @@ app.post('/cardapio/item', upload.single('imagem'), (req, res) => __awaiter(void
         res.status(500).json({ error: 'Erro ao cadastrar o item. Tente novamente.' });
     }
 }));
-app.get('/cardapio', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const itens = yield (0, Admin_1.buscarItensCardapio)();
-        res.status(200).json(itens);
-    }
-    catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Erro ao buscar os itens do cardápio. Tente novamente.' });
-    }
-}));
-app.post('/pedidos', verificarTotem, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { itens, valorTotal, metodoPagamento, trocoPara } = req.body;
-        const clienteId = req.user.id; // ID do usuário vem do token verificado
-        if (!itens || !valorTotal || !metodoPagamento) {
-            return res.status(400).json({ error: 'Itens, valor total e método de pagamento são obrigatórios.' });
-        }
-        const novoPedidoId = yield (0, Admin_1.criarPedido)(clienteId, itens, valorTotal, metodoPagamento, trocoPara);
-        res.status(201).json({ message: 'Pedido Realizado com sucesso!', pedidoId: novoPedidoId });
-    }
-    catch (error) {
-        console.error('Erro no endpoint /pedidos:', error);
-        res.status(500).json({ error: 'Erro ao processar o pedido.' });
-    }
-}));
-app.get('/meus-pedidos', verificarTotem, verificarCargo(['cliente']), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const clienteId = req.user.id;
-        const pedidos = yield (0, Admin_1.buscarPedidosPorCliente)(clienteId);
-        res.status(200).json(pedidos);
-    }
-    catch (error) {
-        res.status(500).json({ error: 'Erro ao buscar pedidos' });
-    }
-}));
-const cargosOperacionais = ['funcionario', 'gerente'];
-app.get('/pedidos/ativos', verificarTotem, verificarCargo(cargosOperacionais), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const pedidos = yield (0, Admin_1.buscarPedidosAtivos)();
-        res.status(200).json(pedidos);
-    }
-    catch (_a) {
-        res.status(500).json({ error: 'ERRO ao buscar pedidos ativos.' });
-    }
-}));
-app.put('/pedidos/:id/status', verificarTotem, verificarCargo(cargosOperacionais), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { id } = req.params;
-        const { novoStatus } = req.body;
-        if (!novoStatus) {
-            return res.status(400).json({ error: 'O novo status é obrigatorio.' });
-        }
-        const pedidoAtualizado = yield (0, Admin_1.atualizarStatusPedido)(Number(id), novoStatus);
-        res.status(200).json(pedidoAtualizado);
-    }
-    catch (error) {
-        res.status(500).json({ error: 'Erro ao atualizar o status do pedido.' });
-    }
-}));
+// Rotas de gerenciamento de usuários (Transformar uma conta registrada no cargo funcionario)
 app.post('/cadastrar-funcionario', verificarTotem, verificarCargo(['gerente']), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { nome, email, senha } = req.body;
     if (!nome || !email || !senha) {
         return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
     }
     try {
-        yield (0, Admin_1.inserirCadastro)(nome, email, senha, 'funcionario');
+        yield (0, usuario_1.inserirCadastro)(nome, email, senha, 'funcionario');
         res.status(201).json({ message: 'Funcionario cadastrado com sucesso!' });
     }
     catch (error) {
@@ -198,7 +148,7 @@ app.post('/usuarios/promover', verificarTotem, verificarCargo(['gerente']), (req
         return res.status(400).json({ error: 'O e-mail é obrigatório.' });
     }
     try {
-        const usuarioPromovido = yield (0, Admin_1.promoverParaFuncionario)(email);
+        const usuarioPromovido = yield (0, usuario_1.promoverParaFuncionario)(email);
         if (usuarioPromovido) {
             res.status(200).json({ message: `Usuário ${usuarioPromovido.nome} promovido para funcionário.` });
         }
@@ -210,36 +160,21 @@ app.post('/usuarios/promover', verificarTotem, verificarCargo(['gerente']), (req
         res.status(500).json({ error: 'Erro ao promover usuário.' });
     }
 }));
-app.get('/pedidos/todos', verificarTotem, verificarCargo(['gerente']), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+// Rotas para o cardápio (vizualização e gerenciamento)
+app.get('/cardapio', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const pedidos = yield (0, Admin_1.buscarTodosOsPedidos)();
-        res.status(200).json(pedidos);
+        const itens = yield (0, cardapio_1.buscarItensCardapio)();
+        res.status(200).json(itens);
     }
     catch (error) {
-        res.status(500).json({ error: 'Erro ao buscar todos os pedidos.' });
-    }
-}));
-app.get('/pedidos/:id', verificarTotem, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const pedidoId = parseInt(req.params.id);
-        const clienteId = req.user.id;
-        const detalhes = yield (0, Admin_1.buscarDetalhesDoPedido)(pedidoId, clienteId);
-        if (detalhes) {
-            res.status(200).json(detalhes);
-        }
-        else {
-            res.status(404).json({ error: 'Pedido não encontrado ou acesso negado.' });
-        }
-    }
-    catch (error) {
-        console.error('Erro ao buscar detalhes do pedido:', error);
-        res.status(500).json({ error: 'Erro interno ao buscar detalhes do pedido.' });
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao buscar os itens do cardápio. Tente novamente.' });
     }
 }));
 app.get('/cardapio/item/:id', verificarTotem, verificarCargo(['gerente']), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
-        const item = yield (0, Admin_1.buscarItemCardapioPorId)(Number(id));
+        const item = yield (0, cardapio_1.buscarItemCardapioPorId)(Number(id));
         if (item) {
             res.status(200).json(item);
         }
@@ -251,6 +186,22 @@ app.get('/cardapio/item/:id', verificarTotem, verificarCargo(['gerente']), (req,
         res.status(500).json({ error: 'Erro ao buscar item.' });
     }
 }));
+app.post('/cardapio/item', verificarTotem, verificarCargo(cargosOperacionais), upload.single('imagem'), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { nome, descricao, preco } = req.body;
+        const imagem = req.file;
+        if (!nome || !descricao || !preco || !imagem) {
+            return res.status(400).json({ error: 'Nome, descrição, preço e imagem são obrigatórios.' });
+        }
+        const imagemUrl = `${req.protocol}://${req.get('host')}/${imagem.path}`;
+        yield (0, cardapio_1.inserirItemCardapio)(nome, descricao, parseFloat(preco), imagemUrl);
+        res.status(201).json({ message: 'Item cadastrado com sucesso!' });
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Erro ao cadastrar o item. Tente novamente.' });
+    }
+}));
 app.put('/cardapio/item/:id', verificarTotem, verificarCargo(['gerente']), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const { id } = req.params;
@@ -258,11 +209,55 @@ app.put('/cardapio/item/:id', verificarTotem, verificarCargo(['gerente']), (req,
         if (!nome || !descricao || !preco) {
             return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
         }
-        const itemAtualizado = yield (0, Admin_1.atualizarItemCardapio)(Number(id), nome, descricao, parseFloat(preco));
+        const itemAtualizado = yield (0, cardapio_1.atualizarItemCardapio)(Number(id), nome, descricao, parseFloat(preco));
         res.status(200).json({ message: 'Item atualizado com sucesso!', item: itemAtualizado });
     }
     catch (error) {
         res.status(500).json({ error: 'Erro ao atualizar o item.' });
+    }
+}));
+// Rotas de Pedidos
+app.post('/pedidos', verificarTotem, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { itens, valorTotal, metodoPagamento, trocoPara } = req.body;
+        const clienteId = req.user.id; // ID do usuário vem do token verificado
+        if (!itens || !valorTotal || !metodoPagamento) {
+            return res.status(400).json({ error: 'Itens, valor total e método de pagamento são obrigatórios.' });
+        }
+        const novoPedidoId = yield (0, pedido_1.criarPedido)(clienteId, itens, valorTotal, metodoPagamento, trocoPara);
+        res.status(201).json({ message: 'Pedido Realizado com sucesso!', pedidoId: novoPedidoId });
+    }
+    catch (error) {
+        console.error('Erro no endpoint /pedidos:', error);
+        res.status(500).json({ error: 'Erro ao processar o pedido.' });
+    }
+}));
+app.get('/meus-pedidos', verificarTotem, verificarCargo(['cliente']), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const clienteId = req.user.id;
+        const pedidos = yield (0, pedido_1.buscarPedidosPorCliente)(clienteId);
+        res.status(200).json(pedidos);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar pedidos' });
+    }
+}));
+app.get('/pedidos/ativos', verificarTotem, verificarCargo(cargosOperacionais), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const pedidos = yield (0, pedido_1.buscarPedidosAtivos)();
+        res.status(200).json(pedidos);
+    }
+    catch (_a) {
+        res.status(500).json({ error: 'ERRO ao buscar pedidos ativos.' });
+    }
+}));
+app.get('/pedidos/todos', verificarTotem, verificarCargo(['gerente']), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const pedidos = yield (0, pedido_1.buscarTodosOsPedidos)();
+        res.status(200).json(pedidos);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar todos os pedidos.' });
     }
 }));
 app.get('/pedidos/detalhes/:id', verificarTotem, verificarCargo(['gerente']), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -271,7 +266,7 @@ app.get('/pedidos/detalhes/:id', verificarTotem, verificarCargo(['gerente']), (r
         if (isNaN(pedidoId)) {
             return res.status(400).json({ error: 'ID do pedido inválido.' });
         }
-        const detalhes = yield (0, Admin_1.buscarDetalhesDoPedidoComoGerente)(pedidoId);
+        const detalhes = yield (0, pedido_1.buscarDetalhesDoPedidoComoGerente)(pedidoId);
         if (detalhes) {
             res.status(200).json(detalhes);
         }
@@ -284,9 +279,41 @@ app.get('/pedidos/detalhes/:id', verificarTotem, verificarCargo(['gerente']), (r
         res.status(500).json({ error: 'Erro interno ao buscar detalhes do pedido.' });
     }
 }));
+app.get('/pedidos/:id', verificarTotem, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const pedidoId = parseInt(req.params.id);
+        const clienteId = req.user.id;
+        const detalhes = yield (0, pedido_1.buscarDetalhesDoPedido)(pedidoId, clienteId);
+        if (detalhes) {
+            res.status(200).json(detalhes);
+        }
+        else {
+            res.status(404).json({ error: 'Pedido não encontrado ou acesso negado.' });
+        }
+    }
+    catch (error) {
+        console.error('Erro ao buscar detalhes do pedido:', error);
+        res.status(500).json({ error: 'Erro interno ao buscar detalhes do pedido.' });
+    }
+}));
+app.put('/pedidos/:id/status', verificarTotem, verificarCargo(cargosOperacionais), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { id } = req.params;
+        const { novoStatus } = req.body;
+        if (!novoStatus) {
+            return res.status(400).json({ error: 'O novo status é obrigatorio.' });
+        }
+        const pedidoAtualizado = yield (0, pedido_1.atualizarStatusPedido)(Number(id), novoStatus);
+        res.status(200).json(pedidoAtualizado);
+    }
+    catch (error) {
+        res.status(500).json({ error: 'Erro ao atualizar o status do pedido.' });
+    }
+}));
+// Rota de relatório (relatório diario e mensal de vendas)
 app.get('/relatorios/vendas', verificarTotem, verificarCargo(['gerente']), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const relatorio = yield (0, Admin_1.gerarRelatorioVendas)();
+        const relatorio = yield (0, relatorio_1.gerarRelatorioVendas)();
         res.status(200).json(relatorio);
     }
     catch (error) {
@@ -294,7 +321,8 @@ app.get('/relatorios/vendas', verificarTotem, verificarCargo(['gerente']), (req,
         res.status(500).json({ error: 'Erro interno ao gerar relatório.' });
     }
 }));
+// Iniciador do servidor
 app.listen(PORT, () => __awaiter(void 0, void 0, void 0, function* () {
-    yield (0, Admin_1.prepararAmbiente)();
+    yield (0, database_1.prepararAmbiente)();
     console.log(`Servidor rodando na porta ${PORT}`);
 }));
