@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",                
+    "module": "ES2020",                 
+    "outDir": "./dist",                 
+    "rootDir": "./ts",                  
+    "lib": ["DOM", "ES2020"],          
+    "strict": true,                     
+    "noImplicitAny": true,              
+    "strictNullChecks": true,           
+    "esModuleInterop": true,            
+    "forceConsistentCasingInFileNames": true, 
+    "skipLibCheck": true       
+  },
+  "include": [
+    "ts/**/*.ts"         
+  ],
+  "exclude": [
+    "node_modules"                    
+  ]
+}

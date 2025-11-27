@@ -29,8 +29,21 @@ registroButton.addEventListener('click', async (event) => {
             mensagem.style.color = 'green';
 
             setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 3500);
+                switch (result.cargo) {
+                    case 'cliente':
+                        window.location.href = 'menuCliente.html';
+                        break;
+                    case 'funcionario':
+                        window.location.href = 'menuFuncionario.html';
+                        break;
+                    case 'gerente':
+                        window.location.href = 'menuGerente.html';
+                        break;
+                    default:
+                        console.error('Cargo do usuário não reconhecido:', result.cargo);
+                        window.location.href = 'index.html';
+                }
+            }, 2000);
         } else {
             mensagem.textContent = result.error;
             mensagem.style.padding = '10px';

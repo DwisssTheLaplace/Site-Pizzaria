@@ -73,3 +73,11 @@
         cursor: pointer;
         transition: 0.5s background;
     }
+
+    .boughtbutton {
+        background-color: rgb(42, 119, 207);
+        align-self: center;
+        margin-top: 20px;
+        margin-bottom: 20px;
+        padding: 20px 40px;
+    }

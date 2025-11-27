@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recibo do Pedido</title>
+    <link rel="stylesheet" href="stylesheet.css">
+    
+    <style>
+        .recibo-detalhado {
+            text-align: left;
+            width: 100%;
+        }
+        .recibo-detalhado table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .recibo-detalhado th, .recibo-detalhado td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .recibo-detalhado th {
+            background-color: #f2f2f2;
+        }
+        .total-info {
+            text-align: right;
+            margin-top: 20px;
+        }
+        .total-info h3 {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        🍕 PIZZARIA TYPE & DOUGH 🍕
+    </div>
+    <br><br>
+
+    <div class="caixa" id="recibo-container">
+        <p>Carregando recibo...</p>
+    </div>
+
+    <script src="dist/recibo.js"></script>
+</body>
+</html>

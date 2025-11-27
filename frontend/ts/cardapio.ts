@@ -34,6 +34,8 @@ async function carregarCardapio() {
         cardapioItens.forEach(item => {
             const cardElement = document.createElement('div');
             cardElement.className = 'card';
+            cardElement.setAttribute('data-id', item.id.toString());
+            cardElement.setAttribute('data-preco', item.preco);
 
             const precoFormatado = parseFloat(item.preco).toFixed(2).replace('.', ',');
 
@@ -56,4 +58,82 @@ async function carregarCardapio() {
     }
 }
 
+if (menuContainer) {
+    menuContainer.addEventListener('click', (event) => {
+        const target = event.target as HTMLElement;
+        const cardElement = target.closest('.card');
+
+        if (!cardElement) {
+            return; // Sai da função se o clique não for dentro de um card
+        }
+
+        const quantidadeView = cardElement.querySelector('.botqntd') as HTMLButtonElement;
+        let quantidadeAtual = parseInt(quantidadeView.textContent || '0');
+
+        // +
+        if (target.classList.contains('botqntd2')) {
+            quantidadeAtual++;
+            quantidadeView.textContent = quantidadeAtual.toString();
+        }
+
+        // -
+        if (target.classList.contains('botqntd1')) {
+            if (quantidadeAtual > 0) {
+                quantidadeAtual--;
+                quantidadeView.textContent = quantidadeAtual.toString();
+            }
+        }
+
+        if (target.classList.contains('add')) {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                alert('Você precisa estar logado para adicionar itens ao carrinho.');
+                window.location.href = 'Login.html';
+                return;
+            }
+
+            const quantidadeParaAdicionar = parseInt(quantidadeView.textContent || '0');
+
+            if (quantidadeParaAdicionar <= 0) {
+                alert('Por favor, selecione uma quantidade maior que zero antes de adicionar ao carrinho.');
+                return;
+            }
+
+
+            const itemId = cardElement.getAttribute('data-id');
+            const itemName= cardElement.querySelector('h1')?.textContent;
+            const itemPrice = cardElement.getAttribute('data-preco');
+
+            if (itemId && itemName && itemPrice) {
+                const itemParaAdicionar = {
+                    id: parseInt(itemId),
+                    nome: itemName,
+                    preco: parseFloat(itemPrice),
+                    quantidade: quantidadeParaAdicionar
+                };
+                adicionarAoCarrinho(itemParaAdicionar);
+                alert(`${quantidadeParaAdicionar} x ${itemName} adicionado ao carrinho.`);
+                quantidadeView.textContent = '0';
+            }
+        }
+
+    });
+};
+
+
+function adicionarAoCarrinho(item: { id: number; nome: string; preco: number; quantidade: number; }) {
+    const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
+    const itemExistente = carrinho.find((i: any) => i.id === item.id);
+
+    if (itemExistente) {
+        itemExistente.quantidade += item.quantidade;
+    } else {
+        carrinho.push(item);
+    }
+
+    localStorage.setItem('carrinho', JSON.stringify(carrinho));
+}
+
+
+    
 carregarCardapio();

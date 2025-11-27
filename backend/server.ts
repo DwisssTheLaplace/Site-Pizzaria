@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction} from 'express';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
-import { inserirCadastro, prepararAmbiente, login, inserirItemCardapio, buscarItensCardapio } from './Admin';
+import { inserirCadastro, prepararAmbiente, login, inserirItemCardapio, buscarItensCardapio, criarPedido, buscarPedidosPorCliente, buscarPedidosAtivos, atualizarStatusPedido, buscarDetalhesDoPedido, promoverParaFuncionario, buscarItemCardapioPorId, atualizarItemCardapio, buscarTodosOsPedidos, buscarDetalhesDoPedidoComoGerente, gerarRelatorioVendas } from './Admin';
 import multer from 'multer';
 import path from 'path';
 
@@ -61,7 +61,10 @@ app.post( '/login', async (req, res) => {
                 JWT_Senha,
                 { expiresIn: '56h' }
             );
-            res.status(200).json({ message: 'Login realizado com sucesso.' });
+            res.status(200).json({ 
+                message: 'Login realizado com sucesso.',
+                token: token,
+                cargo: usuario.cargo });
         } else {
             res.status(401).json({ error: 'Email ou senha inválidos.' });
         }
@@ -86,6 +89,18 @@ function verificarTotem(req: Request, res: Response, next: NextFunction) {
         req.user = user;
         next();
     });
+}
+
+function verificarCargo(cargosPermitidos: string[]) {
+    return (req: Request, res: Response, next: NextFunction) => {
+        const cargoDoUsuario = req.user?.cargo;
+
+        if (cargoDoUsuario && cargosPermitidos.includes(cargoDoUsuario)) {
+            next(); // O usuário tem um dos cargos permitidos, pode prosseguir.
+        } else {
+            res.status(403).json({error: 'Acesso negado. Você não tem permissão para realizar esta ação.'});
+        }
+    };
 }
 
 app.get('/user-perfil', verificarTotem, (req: Request, res: Response) => {
@@ -124,7 +139,181 @@ app.get('/cardapio', async (req: Request, res: Response) => {
     }
 });
 
+app.post('/pedidos', verificarTotem, async (req: Request, res: Response) => {
+    try {
+        const {itens, valorTotal, metodoPagamento, trocoPara} = req.body;
+        const clienteId = req.user.id; // ID do usuário vem do token verificado
+
+        if (!itens || !valorTotal || !metodoPagamento) {
+            return res.status(400).json({ error: 'Itens, valor total e método de pagamento são obrigatórios.' });
+        }
+
+        const novoPedidoId = await criarPedido(clienteId, itens, valorTotal, metodoPagamento, trocoPara);
+
+        res.status(201).json({ message: 'Pedido Realizado com sucesso!', pedidoId: novoPedidoId})
+    }  catch (error) {
+        console.error('Erro no endpoint /pedidos:', error);
+        res.status(500).json({ error: 'Erro ao processar o pedido.' });
+    }
+});
+
+app.get('/meus-pedidos', verificarTotem, verificarCargo(['cliente']), async (req, res) => {
+    try {
+        const clienteId = req.user.id;
+        const pedidos = await buscarPedidosPorCliente(clienteId);
+        res.status(200).json(pedidos);
+    } catch (error) {
+        res.status(500).json({error: 'Erro ao buscar pedidos'});
+    }
+});
+
+const cargosOperacionais = ['funcionario', 'gerente'];
+
+app.get('/pedidos/ativos', verificarTotem, verificarCargo(cargosOperacionais), async (req, res) => {
+    try {
+        const pedidos = await buscarPedidosAtivos();
+        res.status(200).json(pedidos);
+    } catch {
+        res.status(500).json({error: 'ERRO ao buscar pedidos ativos.'});
+    }
+});
+
+app.put('/pedidos/:id/status', verificarTotem, verificarCargo(cargosOperacionais), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { novoStatus } = req.body;
+        if (!novoStatus) {
+            return res.status(400).json({error: 'O novo status é obrigatorio.'});
+        }
+        const pedidoAtualizado = await atualizarStatusPedido(Number(id), novoStatus);
+        res.status(200).json(pedidoAtualizado);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao atualizar o status do pedido.'});
+    }
+});
+
+app.post('/cadastrar-funcionario', verificarTotem, verificarCargo(['gerente']), async (req, res) => {
+    const { nome, email, senha } = req.body;
+    if (!nome || !email || !senha) {
+        return res.status(400).json({error: 'Todos os campos são obrigatórios.'});
+    }
+    try {
+        await inserirCadastro(nome, email, senha, 'funcionario');
+        res.status(201).json({ message: 'Funcionario cadastrado com sucesso!'});
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao cadastrar funcionario.'});
+    }
+});
+
+
+app.post('/usuarios/promover', verificarTotem, verificarCargo(['gerente']), async (req: Request, res: Response) => {
+    const { email } = req.body;
+    if (!email) {
+        return res.status(400).json({ error: 'O e-mail é obrigatório.' });
+    }
+    try {
+        const usuarioPromovido = await promoverParaFuncionario(email);
+        if (usuarioPromovido) {
+            res.status(200).json({ message: `Usuário ${usuarioPromovido.nome} promovido para funcionário.` });
+        } else {
+            res.status(404).json({ error: 'Usuário não encontrado com o e-mail fornecido.' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao promover usuário.' });
+    }
+});
+
+app.get('/pedidos/todos', verificarTotem, verificarCargo(['gerente']), async (req, res) => {
+    try {
+        const pedidos = await buscarTodosOsPedidos();
+        res.status(200).json(pedidos);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar todos os pedidos.' });
+    }
+});
+
+app.get('/pedidos/:id', verificarTotem, async (req: Request, res: Response) => {
+    try {
+        const pedidoId = parseInt(req.params.id);
+        const clienteId = req.user.id;
+
+        const detalhes = await buscarDetalhesDoPedido(pedidoId, clienteId);
+
+        if (detalhes) {
+            res.status(200).json(detalhes);
+        } else {
+            res.status(404).json({ error: 'Pedido não encontrado ou acesso negado.' });
+        }
+    } catch (error) {
+        console.error('Erro ao buscar detalhes do pedido:', error);
+        res.status(500).json({ error: 'Erro interno ao buscar detalhes do pedido.' });
+    }
+});
+
+app.get('/cardapio/item/:id', verificarTotem, verificarCargo(['gerente']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const item = await buscarItemCardapioPorId(Number(id));
+        if (item) {
+            res.status(200).json(item);
+        } else {
+            res.status(404).json({ error: 'Item não encontrado.' });
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao buscar item.' });
+    }
+});
+
+
+app.put('/cardapio/item/:id', verificarTotem, verificarCargo(['gerente']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { nome, descricao, preco } = req.body;
+
+        if (!nome || !descricao || !preco) {
+            return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
+        }
+        
+        const itemAtualizado = await atualizarItemCardapio(Number(id), nome, descricao, parseFloat(preco));
+        res.status(200).json({ message: 'Item atualizado com sucesso!', item: itemAtualizado });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao atualizar o item.' });
+    }
+});
+
+app.get('/pedidos/detalhes/:id', verificarTotem, verificarCargo(['gerente']), async (req, res) => {
+    try {
+        const pedidoId = parseInt(req.params.id);
+        if (isNaN(pedidoId)) {
+            return res.status(400).json({ error: 'ID do pedido inválido.' });
+        }
+
+        const detalhes = await buscarDetalhesDoPedidoComoGerente(pedidoId);
+
+        if (detalhes) {
+            res.status(200).json(detalhes);
+        } else {
+            res.status(404).json({ error: 'Pedido não encontrado.' });
+        }
+    } catch (error) {
+        console.error('Erro ao buscar detalhes do pedido (gerente):', error);
+        res.status(500).json({ error: 'Erro interno ao buscar detalhes do pedido.' });
+    }
+});
+
+app.get('/relatorios/vendas', verificarTotem, verificarCargo(['gerente']), async (req, res) => {
+    try {
+        const relatorio = await gerarRelatorioVendas();
+        res.status(200).json(relatorio);
+    } catch (error) {
+        console.error('Erro ao gerar relatório de vendas:', error);
+        res.status(500).json({ error: 'Erro interno ao gerar relatório.' });
+    }
+});
+
 app.listen(PORT, async () => {
     await prepararAmbiente();
     console.log(`Servidor rodando na porta ${PORT}`);
 });
+
+

@@ -1,83 +1,105 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
-    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
-    function verb(n) { return function (v) { return step([n, v]); }; }
-    function step(op) {
-        if (f) throw new TypeError("Generator is already executing.");
-        while (g && (g = 0, op[0] && (_ = 0)), _) try {
-            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [op[0] & 2, t.value];
-            switch (op[0]) {
-                case 0: case 1: t = op; break;
-                case 4: _.label++; return { value: op[1], done: false };
-                case 5: _.label++; y = op[1]; op = [0]; continue;
-                case 7: op = _.ops.pop(); _.trys.pop(); continue;
-                default:
-                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
-                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
-                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
-                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
-                    if (t[2]) _.ops.pop();
-                    _.trys.pop(); continue;
-            }
-            op = body.call(thisArg, _);
-        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
-        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+"use strict";
+const menuContainer = document.getElementById('menu-container');
+async function carregarCardapio() {
+    if (!menuContainer) {
+        console.error('Erro crítico: O contêiner do menu com id "menu-container" não foi encontrado no HTML.');
+        return;
     }
-};
-var menuContainer = document.getElementById('menu-container');
-function carregarCardapio() {
-    return __awaiter(this, void 0, void 0, function () {
-        var response, cardapioItens, error_1;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    if (!menuContainer) {
-                        console.error('Erro crítico: O contêiner do menu com id "menu-container" não foi encontrado no HTML.');
-                        return [2 /*return*/];
-                    }
-                    _a.label = 1;
-                case 1:
-                    _a.trys.push([1, 4, , 5]);
-                    return [4 /*yield*/, fetch('http://localhost:3000/cardapio')];
-                case 2:
-                    response = _a.sent();
-                    if (!response.ok) {
-                        throw new Error('Erro ao buscar o cardápio.');
-                    }
-                    return [4 /*yield*/, response.json()];
-                case 3:
-                    cardapioItens = _a.sent();
-                    menuContainer.innerHTML = '';
-                    if (cardapioItens.length === 0) {
-                        menuContainer.innerHTML = '<p>Nenhum item no cardápio.</p>';
-                        return [2 /*return*/];
-                    }
-                    cardapioItens.forEach(function (item) {
-                        var cardElement = document.createElement('div');
-                        cardElement.className = 'card';
-                        var precoFormatado = parseFloat(item.preco).toFixed(2).replace('.', ',');
-                        cardElement.innerHTML = "\n                <img src=\"".concat(item.imagem_url, "\" alt=\"imagem da ").concat(item.nome, "\">\n                <h1>").concat(item.nome, "</h1>\n                <p>").concat(item.descricao, "</p>\n                <p>Pre\u00E7o: R$ ").concat(precoFormatado, "</p>\n                <button class=\"botqntd1\"> - </button>\n                <button class=\"botqntd\">0</button>\n                <button class=\"botqntd2\"> + </button> <br>\n                <button class=\"add\">Adicionar ao carrinho</button>\n            ");
-                        menuContainer.appendChild(cardElement);
-                    });
-                    return [3 /*break*/, 5];
-                case 4:
-                    error_1 = _a.sent();
-                    console.error('Erro ao carregar o cardápio:', error_1);
-                    menuContainer.innerHTML = '<p style="color: red;">Não foi possível carregar o cardápio. Verifique sua conexão ou tente novamente mais tarde.</p>';
-                    return [3 /*break*/, 5];
-                case 5: return [2 /*return*/];
-            }
+    try {
+        const response = await fetch('http://localhost:3000/cardapio');
+        if (!response.ok) {
+            throw new Error('Erro ao buscar o cardápio.');
+        }
+        const cardapioItens = await response.json();
+        menuContainer.innerHTML = '';
+        if (cardapioItens.length === 0) {
+            menuContainer.innerHTML = '<p>Nenhum item no cardápio.</p>';
+            return;
+        }
+        cardapioItens.forEach(item => {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card';
+            cardElement.setAttribute('data-id', item.id.toString());
+            cardElement.setAttribute('data-preco', item.preco);
+            const precoFormatado = parseFloat(item.preco).toFixed(2).replace('.', ',');
+            cardElement.innerHTML = `
+                <img src="${item.imagem_url}" alt="imagem da ${item.nome}">
+                <h1>${item.nome}</h1>
+                <p>${item.descricao}</p>
+                <p>Preço: R$ ${precoFormatado}</p>
+                <button class="botqntd1"> - </button>
+                <button class="botqntd">0</button>
+                <button class="botqntd2"> + </button> <br>
+                <button class="add">Adicionar ao carrinho</button>
+            `;
+            menuContainer.appendChild(cardElement);
         });
+    }
+    catch (error) {
+        console.error('Erro ao carregar o cardápio:', error);
+        menuContainer.innerHTML = '<p style="color: red;">Não foi possível carregar o cardápio. Verifique sua conexão ou tente novamente mais tarde.</p>';
+    }
+}
+if (menuContainer) {
+    menuContainer.addEventListener('click', (event) => {
+        const target = event.target;
+        const cardElement = target.closest('.card');
+        if (!cardElement) {
+            return; // Sai da função se o clique não for dentro de um card
+        }
+        const quantidadeView = cardElement.querySelector('.botqntd');
+        let quantidadeAtual = parseInt(quantidadeView.textContent || '0');
+        // +
+        if (target.classList.contains('botqntd2')) {
+            quantidadeAtual++;
+            quantidadeView.textContent = quantidadeAtual.toString();
+        }
+        // -
+        if (target.classList.contains('botqntd1')) {
+            if (quantidadeAtual > 0) {
+                quantidadeAtual--;
+                quantidadeView.textContent = quantidadeAtual.toString();
+            }
+        }
+        if (target.classList.contains('add')) {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                alert('Você precisa estar logado para adicionar itens ao carrinho.');
+                window.location.href = 'Login.html';
+                return;
+            }
+            const quantidadeParaAdicionar = parseInt(quantidadeView.textContent || '0');
+            if (quantidadeParaAdicionar <= 0) {
+                alert('Por favor, selecione uma quantidade maior que zero antes de adicionar ao carrinho.');
+                return;
+            }
+            const itemId = cardElement.getAttribute('data-id');
+            const itemName = cardElement.querySelector('h1')?.textContent;
+            const itemPrice = cardElement.getAttribute('data-preco');
+            if (itemId && itemName && itemPrice) {
+                const itemParaAdicionar = {
+                    id: parseInt(itemId),
+                    nome: itemName,
+                    preco: parseFloat(itemPrice),
+                    quantidade: quantidadeParaAdicionar
+                };
+                adicionarAoCarrinho(itemParaAdicionar);
+                alert(`${quantidadeParaAdicionar} x ${itemName} adicionado ao carrinho.`);
+                quantidadeView.textContent = '0';
+            }
+        }
     });
+}
+;
+function adicionarAoCarrinho(item) {
+    const carrinho = JSON.parse(localStorage.getItem('carrinho') || '[]');
+    const itemExistente = carrinho.find((i) => i.id === item.id);
+    if (itemExistente) {
+        itemExistente.quantidade += item.quantidade;
+    }
+    else {
+        carrinho.push(item);
+    }
+    localStorage.setItem('carrinho', JSON.stringify(carrinho));
 }
 carregarCardapio();
